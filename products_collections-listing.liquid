@@ -1,0 +1,9 @@
+{% assign product_collections = product.collections %}
+{% if product_collections.size > 0 %}
+  <div class="product-collections">
+    <strong>Collections :</strong>
+    {% for collection in product_collections %}
+      <a href="{{ collection.url }}">{{ collection.title }}</a>{% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
