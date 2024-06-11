@@ -1,0 +1,54 @@
+{% assign menu_items = site.main_menu.items %}
+{% assign current_collection = collections[collection.handle] %}
+{% assign breadcrumb = "Home" %}
+
+{% assign parent_found = false %}
+
+{% for item in menu_items %}
+  {% if item.type == 'collection' and item.handle == current_collection.handle %}
+    {% assign parent_found = true %}
+    {% assign breadcrumb = breadcrumb | append: " > " | append: item.title %}
+  {% endif %}
+
+  {% if item.children.size > 0 and parent_found == false %}
+    {% for child in item.children %}
+      {% if child.type == 'collection' and child.handle == current_collection.handle %}
+        {% assign parent_found = true %}
+        {% assign breadcrumb = breadcrumb | append: " > " | append: item.title | append: " > " | append: child.title %}
+      {% endif %}
+      
+      {% if child.children.size > 0 and parent_found == false %}
+        {% for grandchild in child.children %}
+          {% if grandchild.type == 'collection' and grandchild.handle == current_collection.handle %}
+            {% assign parent_found = true %}
+            {% assign breadcrumb = breadcrumb | append: " > " | append: item.title | append: " > " | append: child.title | append: " > " | append: grandchild.title %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a href="{{ shop.url }}" itemprop="item">
+        <span itemprop="name">Home</span>
+      </a>
+      <meta itemprop="position" content="1" />
+    </li>
+    {% assign position = 2 %}
+    {% assign parts = breadcrumb | split: " > " %}
+    {% for part in parts %}
+      {% if part != "Home" %}
+        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="{{ shop.url }}/collections/{{ part | handleize }}" itemprop="item">
+            <span itemprop="name">{{ part }}</span>
+          </a>
+          <meta itemprop="position" content="{{ position }}" />
+        </li>
+        {% assign position = position | plus: 1 %}
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
