@@ -1,0 +1,225 @@
+{% comment %}
+  Include this snippet in your theme.liquid or specific templates to add structured data
+{% endcomment %}
+
+{% if template contains 'index' %}
+  <!-- Schema.org for Home Page -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "{{ shop.name }}",
+    "url": "{{ shop.url }}",
+    "logo": "{{ shop.logo | image_url: '300x' }}",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "{{ shop.phone }}",
+      "contactType": "Service client",
+      "areaServed": "FR",
+      "availableLanguage": "Français"
+    },
+    "sameAs": [
+      "{{ shop.facebook_url }}",
+      "{{ shop.twitter_url }}",
+      "{{ shop.linkedin_url }}"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "{{ shop.name }}",
+    "url": "{{ shop.url }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "{{ shop.url }}/recherche?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- Schema.org for AggregateRating -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AggregateRating",
+    "ratingValue": "{% if loox_enabled %}{{ loox.rating_value }}{% elsif judgeme_enabled %}{{ judgeme.rating_value }}{% elsif shopify_reviews_enabled %}{{ shopify_reviews.rating_value }}{% endif %}",
+    "reviewCount": "{% if loox_enabled %}{{ loox.review_count }}{% elsif judgeme_enabled %}{{ judgeme.review_count }}{% elsif shopify_reviews_enabled %}{{ shopify_reviews.review_count }}{% endif %}"
+  }
+  </script>
+
+  {% comment %}
+  Include this schema only if the store is a local store with an address that correpond to the address filled in GMB
+  {% endcomment %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "{{ shop.name }}",
+    "image": "{{ shop.logo | image_url: '300x' }}",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "{{ shop.address.street }}",
+      "addressLocality": "{{ shop.address.city }}",
+      "postalCode": "{{ shop.address.zip }}",
+      "addressCountry": "FR"
+    },
+    "telephone": "{{ shop.phone }}",
+    "priceRange": "$$"
+  }
+  </script>
+    {% comment %}
+  Include this schema only if the store is a local store with an address that correpond to the address filled in GMB
+  {% endcomment %}
+
+  
+{% elsif template contains 'collection' %}
+  
+  <!-- Schema.org for Collection Page -->
+  {% assign product_count = collection.products_count %}
+  {% assign total_reviews = 0 %}
+  {% assign total_rating = 0 %}
+  {% assign min_price = blank %}
+  {% assign max_price = blank %}
+  
+  {% for product in collection.products %}
+    {% assign total_reviews = total_reviews | plus: product.reviews_count %}
+    {% assign total_rating = total_rating | plus: product.reviews_count | times: product.reviews_rating %}
+  
+    {% assign product_price = product.price | divided_by: 100 %}
+    {% if min_price == blank or product_price < min_price %}
+      {% assign min_price = product_price %}
+    {% endif %}
+    {% if max_price == blank or product_price > max_price %}
+      {% assign max_price = product_price %}
+    {% endif %}
+  {% endfor %}
+  
+  {% assign average_rating = total_rating | divided_by: total_reviews %}
+  
+  <!-- Schema.org for Collection Page -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "{{ collection.title }}",
+    "description": "{{ collection.description | strip_html | escape }}",
+    "url": "{{ collection.url }}",
+    {% if collection.image %}
+    "image": "{{ collection.image | image_url: '300x' }}",
+    {% endif %}
+    "numberOfItems": {{ product_count }},
+    "offers": {
+      "@type": "AggregateOffer",
+      "lowPrice": "{{ min_price }}",
+      "highPrice": "{{ max_price }}",
+      "priceCurrency": "{{ shop.currency }}",
+      "offerCount": "{{ product_count }}"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "{{ average_rating | round: 1 }}",
+      "reviewCount": "{{ total_reviews }}"
+    }
+  }
+  </script>
+
+{% elsif template contains 'product' %}
+  
+  <!-- Schema.org for Product Page -->
+  {% assign total_reviews = product.reviews_count %}
+  {% assign average_rating = product.reviews_rating %}
+  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ product.title }}",
+    "image": "{{ product.featured_image | image_url: '300x' }}",
+    "description": "{{ product.description | strip_html | escape }}",
+    "sku": "{{ product.sku }}",
+    "brand": {
+      "@type": "Brand",
+      "name": "{{ product.vendor }}"
+    },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "{{ shop.currency }}",
+      "price": "{{ product.price | divided_by: 100.0 }}",
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+      "url": "{{ product.url }}"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "{{ average_rating | round: 1 }}",
+      "reviewCount": "{{ total_reviews }}"
+    }
+  }
+  </script>
+
+  
+{% elsif template contains 'article' %}
+  
+  <!-- Schema.org for Article Page -->
+  {% assign word_count = article.content | strip_html | size %}
+  {% assign reading_time_minutes = word_count | divided_by: 200 | ceil %}
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{ article.title }}",
+    "author": {
+      "@type": "Person",
+      "name": "{{ article.author }}"
+    },
+    "datePublished": "{{ article.published_at | date: '%Y-%m-%d' }}",
+    "image": "{{ article.image | image_url: '300x' }}",
+    "articleBody": "{{ article.content | strip_html | escape }}",
+    "wordCount": "{{ word_count }}",
+    "timeRequired": "PT{{ reading_time_minutes }}M",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{ article.url }}"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "{{ shop.name }}",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "{{ shop.logo | image_url: '300x' }}"
+      }
+    }
+  }
+  </script>
+
+{% elsif template contains 'page' %}
+
+  <!-- Schema.org for Static Page -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "{{ page.title }}",
+    "url": "{{ page.url }}",
+    "description": "{{ page.content | strip_html | truncate: 160 | escape }}",
+    {% if page.image %}
+    "image": "{{ page.image | image_url: '300x' }}",
+    {% endif %}
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "{{ page.url }}"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "{{ shop.name }}",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "{{ shop.logo | image_url: '300x' }}"
+      }
+    }
+  }
+  </script>
+{% endif %}
