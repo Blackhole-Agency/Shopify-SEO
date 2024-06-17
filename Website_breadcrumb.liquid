@@ -1,0 +1,269 @@
+{% comment %}
+  Breadcrumb for different page types
+{% endcomment %}
+
+<style>
+  .breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    background: none;
+  }
+  .breadcrumb-item {
+    display: flex;
+    align-items: center;
+  }
+  .breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+    margin: 0 10px;
+    color: #999;
+  }
+  .breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  .breadcrumb-item a:hover {
+    text-decoration: underline;
+  }
+  .breadcrumb-item span {
+    color: #6c757d;
+  }
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+    <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <a href="{{ shop.url }}" itemprop="item" title="{{ shop.name }}">
+        <span itemprop="name">Home</span>
+      </a>
+      <meta itemprop="position" content="1" />
+    </li>
+    {% assign position = 2 %}
+
+    {% if template contains 'index' %}
+      <!-- Breadcrumb for Home Page -->
+      <!-- No additional breadcrumbs needed for the home page -->
+
+    {% elsif template contains 'collection' %}
+      <!-- Breadcrumb for Collection Page -->
+      {% assign current_collection = collection %}
+      {% assign first_element = "" %}
+      {% assign first_element_url = "" %}
+      {% assign second_element = "" %}
+      {% assign second_element_url = "" %}
+      {% assign breadcrumb_found = false %}
+
+      {% comment %} Starting to search the main menu {% endcomment %}
+      {% for item in linklists.main-menu.links %}
+        {% comment %} Checking first level menu item: {{ item.title }} {% endcomment %}
+        {% if item.object.handle == current_collection.handle %}
+          {% comment %} Found at first level: {{ item.title }} {% endcomment %}
+          {% assign breadcrumb_found = true %}
+          {% break %}
+        {% elsif item.links.size > 0 %}
+          {% comment %} Checking children of {{ item.title }} {% endcomment %}
+          {% for child in item.links %}
+            {% comment %} Checking second level menu item: {{ child.title }} {% endcomment %}
+            {% if child.object.handle == current_collection.handle %}
+              {% comment %} Found at second level: {{ child.title }} under {{ item.title }} {% endcomment %}
+              {% assign first_element = item.title %}
+              {% assign first_element_url = item.url %}
+              {% assign breadcrumb_found = true %}
+              {% break %}
+            {% elsif child.links.size > 0 %}
+              {% comment %} Checking children of {{ child.title }} {% endcomment %}
+              {% for grandchild in child.links %}
+                {% comment %} Checking third level menu item: {{ grandchild.title }} {% endcomment %}
+                {% if grandchild.object.handle == current_collection.handle %}
+                  {% comment %} Found at third level: {{ grandchild.title }} under {{ child.title }} under {{ item.title }} {% endcomment %}
+                  {% assign first_element = item.title %}
+                  {% assign first_element_url = item.url %}
+                  {% assign second_element = child.title %}
+                  {% assign second_element_url = child.url %}
+                  {% assign breadcrumb_found = true %}
+                  {% break %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% if breadcrumb_found %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if breadcrumb_found %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+
+      {% if first_element != "" %}
+        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="{{ first_element_url }}" itemprop="item" title="{{ first_element }}">
+            <span itemprop="name">{{ first_element }}</span>
+          </a>
+          <meta itemprop="position" content="{{ position }}" />
+        </li>
+        {% assign position = position | plus: 1 %}
+      {% endif %}
+
+      {% if second_element != "" %}
+        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="{{ second_element_url }}" itemprop="item" title="{{ second_element }}">
+            <span itemprop="name">{{ second_element }}</span>
+          </a>
+          <meta itemprop="position" content="{{ position }}" />
+        </li>
+        {% assign position = position | plus: 1 %}
+      {% endif %}
+
+      <li class="breadcrumb-item active" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <span itemprop="name">{{ collection.title }}</span>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+
+    {% elsif template contains 'product' %}
+      <!-- Breadcrumb for Product Page -->
+      {% assign current_product = product %}
+      {% assign collections = current_product.collections %}
+      {% assign deepest_collection = "" %}
+      {% assign deepest_level = 0 %}
+
+      {% for collection in collections %}
+        {% for item in linklists.main-menu.links %}
+          {% if item.object.handle == collection.handle %}
+            {% assign current_level = 1 %}
+            {% if current_level > deepest_level %}
+              {% assign deepest_collection = collection %}
+              {% assign deepest_level = current_level %}
+            {% endif %}
+          {% elsif item.links.size > 0 %}
+            {% for child in item.links %}
+              {% if child.object.handle == collection.handle %}
+                {% assign current_level = 2 %}
+                {% if current_level > deepest_level %}
+                  {% assign deepest_collection = collection %}
+                  {% assign deepest_level = current_level %}
+                {% endif %}
+              {% elsif child.links.size > 0 %}
+                {% for grandchild in child.links %}
+                  {% if grandchild.object.handle == collection.handle %}
+                    {% assign current_level = 3 %}
+                    {% if current_level > deepest_level %}
+                      {% assign deepest_collection = collection %}
+                      {% assign deepest_level = current_level %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+
+      {% assign first_element = "" %}
+      {% assign first_element_url = "" %}
+      {% assign second_element = "" %}
+      {% assign second_element_url = "" %}
+      {% assign breadcrumb_found = false %}
+
+      {% comment %} Starting to search the main menu {% endcomment %}
+      {% for item in linklists.main-menu.links %}
+        {% comment %} Checking first level menu item: {{ item.title }} {% endcomment %}
+        {% if item.object.handle == deepest_collection.handle %}
+          {% comment %} Found at first level: {{ item.title }} {% endcomment %}
+          {% assign breadcrumb_found = true %}
+          {% break %}
+        {% elsif item.links.size > 0 %}
+          {% comment %} Checking children of {{ item.title }} {% endcomment %}
+          {% for child in item.links %}
+            {% comment %} Checking second level menu item: {{ child.title }} {% endcomment %}
+            {% if child.object.handle == deepest_collection.handle %}
+              {% comment %} Found at second level: {{ child.title }} under {{ item.title }} {% endcomment %}
+              {% assign first_element = item.title %}
+              {% assign first_element_url = item.url %}
+              {% assign breadcrumb_found = true %}
+              {% break %}
+            {% elsif child.links.size > 0 %}
+              {% comment %} Checking children of {{ child.title }} {% endcomment %}
+              {% for grandchild in child.links %}
+                {% comment %} Checking third level menu item: {{ grandchild.title }} {% endcomment %}
+                {% if grandchild.object.handle == deepest_collection.handle %}
+                  {% comment %} Found at third level: {{ grandchild.title }} under {{ child.title }} under {{ item.title }} {% endcomment %}
+                  {% assign first_element = item.title %}
+                  {% assign first_element_url = item.url %}
+                  {% assign second_element = child.title %}
+                  {% assign second_element_url = child.url %}
+                  {% assign breadcrumb_found = true %}
+                  {% break %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {% if breadcrumb_found %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if breadcrumb_found %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+
+      {% if first_element != "" %}
+        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="{{ shop.url }}{{ first_element_url }}" itemprop="item">
+            <span itemprop="name">{{ first_element }}</span>
+          </a>
+          <meta itemprop="position" content="{{ position }}" />
+        </li>
+        {% assign position = position | plus: 1 %}
+      {% endif %}
+
+      {% if second_element != "" %}
+        <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+          <a href="{{ shop.url }}{{ second_element_url }}" itemprop="item">
+            <span itemprop="name">{{ second_element }}</span>
+          </a>
+          <meta itemprop="position" content="{{ position }}" />
+        </li>
+        {% assign position = position | plus: 1 %}
+      {% endif %}
+
+      <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a href="{{ shop.url }}/collections/{{ deepest_collection.handle }}" itemprop="item">
+          <span itemprop="name">{{ deepest_collection.title }}</span>
+        </a>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+      {% assign position = position | plus: 1 %}
+      
+      <li class="breadcrumb-item active" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <span itemprop="name">{{ product.title }}</span>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+
+
+    {% elsif template contains 'article' %}
+      <!-- Breadcrumb for Article Page -->
+      <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a href="{{ shop.url }}/blogs/{{ blog.handle }}" itemprop="item">
+          <span itemprop="name">{{ blog.title }}</span>
+        </a>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+      {% assign position = position | plus: 1 %}
+      <li class="breadcrumb-item active" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <span itemprop="name">{{ article.title }}</span>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+
+    {% elsif template contains 'page' %}
+      <!-- Breadcrumb for Static Page -->
+      <li class="breadcrumb-item active" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <span itemprop="name">{{ page.title }}</span>
+        <meta itemprop="position" content="{{ position }}" />
+      </li>
+
+    {% endif %}
+  </ol>
+</nav>
